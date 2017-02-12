@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -9,15 +10,17 @@ const long double MAX_ERROR = 0.00001;
 const int MAX_ITERATIONS = 1000;
 const int X_RES = 1366;
 const int Y_RES = 768;
-const long double X_MAX = 4;
-const long double X_MIN = 0;
+const long double R_MAX = 4;
+const long double R_MIN = 0;
 const long double Y_MAX = 1;
 const long double Y_MIN = 0;
+long double CURRENT_R = 0;
+long double CURRENT_Y = 0;
 const long double STARTING_VALUE = 0.5;
 
 long double f(long double x, long double r) {
-    //return (r*x*(1 - x));
-    return std::pow(r, x);
+    return (r*x*(1 - x));
+    //return std::pow(r, x);
 }
 
 struct MatchData {
@@ -101,18 +104,39 @@ void printCycle(CycleData c) {
 }
 
 void calcPoints(SDL_Renderer *ren, std::vector<CycleData> *cycleList) {
-    for (long double r = X_MIN; r < X_MAX; r += ((X_MAX-X_MIN)/X_RES)) {
+    for (long double r = R_MIN; r < R_MAX; r += ((R_MAX-R_MIN)/X_RES)) {
         CycleData cycle = fixedCycle(STARTING_VALUE, r);
         printCycle(cycle);
         cycleList->push_back(cycle);
     }
 }
 
+void drawCoords(TTF_Font *font, SDL_Renderer *ren, long double r, long double x, long double y) {
+    SDL_SetRenderDrawColor(ren, 128, 128, 128, 255);
+    std::stringstream coordsText;
+    coordsText
+    << "x = " << STARTING_VALUE << "\n"
+    << "r = " << CURRENT_R << "\n"
+    << "y = " << CURRENT_Y << "\n";
+    SDL_Surface *coordsSurface = TTF_RenderText_Blended_Wrapped(font, coordsText.str().c_str(), {255, 255, 255, 255}, X_RES);
+    SDL_Texture *coords = SDL_CreateTextureFromSurface(ren, coordsSurface);
+    SDL_Rect coordsRect;
+    coordsRect.x = 10;
+    coordsRect.y = 10;
+    coordsRect.w = X_RES;
+    coordsRect.h = 24*4;
+    SDL_RenderCopy(ren, coords, NULL, &coordsRect);
+    SDL_FreeSurface(coordsSurface);
+    SDL_DestroyTexture(coords);
+}
+
 int main() {
     bool go = true;
     SDL_Init(SDL_INIT_VIDEO);
+    TTF_Init();
+    TTF_Font *font = TTF_OpenFont("DejaVuSansMono.ttf", 24);
     std::stringstream windowTitle;
-    windowTitle << "Bifurication of f("<< STARTING_VALUE << "), " << X_MIN << " < r < " << X_MAX << " " << Y_MIN << " < y < " << Y_MAX;
+    windowTitle << "Bifurication of f("<< STARTING_VALUE << "), " << R_MIN << " < r < " << R_MAX << " " << Y_MIN << " < y < " << Y_MAX;
     SDL_Window *win = SDL_CreateWindow(windowTitle.str().c_str(), 0,0, 1366,768, SDL_WINDOW_SHOWN);
     SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
     //create calculation thread and begin calculations
@@ -123,12 +147,13 @@ int main() {
         //begin draw loop
         SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
         SDL_RenderClear(ren);
+        drawCoords(font, ren, 0, 0, 0);
         SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
         for (auto cycle : cycleList) {
             if (cycle.converging) {
                 for (auto cs : cycle.cycle) {
                     SDL_RenderDrawPoint(ren,
-                        cycle.rValue * (X_RES / (X_MAX-X_MIN)),
+                        cycle.rValue * (X_RES / (R_MAX-R_MIN)),
                         Y_RES - (cs * (Y_RES / (Y_MAX-Y_MIN)))
                     );
                 }
@@ -140,6 +165,10 @@ int main() {
             switch (e.type) {
                 case SDL_QUIT: {
                     go = false;
+                }
+                case SDL_MOUSEMOTION: {
+                    CURRENT_Y = ((Y_RES - (long double)e.motion.y) / Y_RES) * (Y_MAX - Y_MIN) - Y_MIN;
+                    CURRENT_R = ((long double)e.motion.x / X_RES) * (R_MAX - R_MIN) - R_MIN;
                 }
             }
         }
