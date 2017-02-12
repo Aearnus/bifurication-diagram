@@ -11,15 +11,20 @@ const int MAX_ITERATIONS = 1000;
 const int X_RES = 1366;
 const int Y_RES = 768;
 const long double R_MAX = 4;
-const long double R_MIN = 0;
+const long double R_MIN = 3;
 const long double Y_MAX = 1;
 const long double Y_MIN = 0;
+//const long double R_MAX = 4;
+//const long double R_MIN = 0;
+//const long double Y_MAX = 1;
+//const long double Y_MIN = 0;
 long double CURRENT_R = 0;
 long double CURRENT_Y = 0;
 const long double STARTING_VALUE = 0.5;
 
 long double f(long double x, long double r) {
     return (r*x*(1 - x));
+    //return (r*x*(1 - x));
     //return std::pow(r, x);
 }
 
@@ -153,8 +158,8 @@ int main() {
             if (cycle.converging) {
                 for (auto cs : cycle.cycle) {
                     SDL_RenderDrawPoint(ren,
-                        cycle.rValue * (X_RES / (R_MAX-R_MIN)),
-                        Y_RES - (cs * (Y_RES / (Y_MAX-Y_MIN)))
+                        (cycle.rValue - R_MIN) * (X_RES / (R_MAX-R_MIN)),
+                        Y_RES - ((cs - Y_MIN) * (Y_RES / (Y_MAX-Y_MIN)))
                     );
                 }
             }
@@ -167,8 +172,8 @@ int main() {
                     go = false;
                 }
                 case SDL_MOUSEMOTION: {
-                    CURRENT_Y = ((Y_RES - (long double)e.motion.y) / Y_RES) * (Y_MAX - Y_MIN) - Y_MIN;
-                    CURRENT_R = ((long double)e.motion.x / X_RES) * (R_MAX - R_MIN) - R_MIN;
+                    CURRENT_Y = ((Y_RES - (long double)e.motion.y) / Y_RES) * (Y_MAX - Y_MIN) + Y_MIN;
+                    CURRENT_R = (((long double)e.motion.x / X_RES) * (R_MAX - R_MIN)) + R_MIN;
                 }
             }
         }
