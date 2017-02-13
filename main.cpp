@@ -15,6 +15,8 @@ long double R_MIN = 0;
 long double Y_MAX = 1;
 long double Y_MIN = 0;
 bool DIRTY_UPDATE = false;
+const long double INVERSE_MOVE_SPEED = 500;
+const long double ZOOM_SPEED = 0.01;
 //long double R_MAX = 4;
 //long double R_MIN = 0;
 //long double Y_MAX = 1;
@@ -139,7 +141,7 @@ void drawCoords(TTF_Font *font, SDL_Renderer *ren, long double r, long double x,
     coordsRect.x = 10;
     coordsRect.y = 10;
     coordsRect.w = X_RES;
-    coordsRect.h = 24*4;
+    coordsRect.h = 24*3;
     SDL_RenderCopy(ren, coords, NULL, &coordsRect);
     SDL_FreeSurface(coordsSurface);
     SDL_DestroyTexture(coords);
@@ -189,8 +191,8 @@ int main() {
         //handle controls
         SDL_PumpEvents(); //update keyboard array
         //movement
-        long double moveAmountR = (R_MAX - R_MIN) / 800;
-        long double moveAmountY = (Y_MAX - Y_MIN) / 800;
+        long double moveAmountR = (R_MAX - R_MIN) / INVERSE_MOVE_SPEED;
+        long double moveAmountY = (Y_MAX - Y_MIN) / INVERSE_MOVE_SPEED;
         if (keyboard[SDL_SCANCODE_RIGHT]) {
             R_MAX += moveAmountR;
             R_MIN += moveAmountR;
@@ -212,19 +214,18 @@ int main() {
             DIRTY_UPDATE = true;
         }
         //zooming
-        long double zoomAmount = 0.001;
         if (keyboard[SDL_SCANCODE_E]) {
-            Y_MAX = lerp(zoomAmount, Y_MAX, (Y_MAX + Y_MIN) / 2);
-            Y_MIN = lerp(zoomAmount, Y_MIN, (Y_MAX + Y_MIN) / 2);
-            R_MAX = lerp(zoomAmount, R_MAX, (R_MAX + R_MIN) / 2);
-            R_MIN = lerp(zoomAmount, R_MIN, (R_MAX + R_MIN) / 2);
+            Y_MAX = lerp(ZOOM_SPEED, Y_MAX, (Y_MAX + Y_MIN) / 2);
+            Y_MIN = lerp(ZOOM_SPEED, Y_MIN, (Y_MAX + Y_MIN) / 2);
+            R_MAX = lerp(ZOOM_SPEED, R_MAX, (R_MAX + R_MIN) / 2);
+            R_MIN = lerp(ZOOM_SPEED, R_MIN, (R_MAX + R_MIN) / 2);
             DIRTY_UPDATE = true;
         }
         if (keyboard[SDL_SCANCODE_Q]) {
-            Y_MAX = lerp(-zoomAmount, Y_MAX, (Y_MAX + Y_MIN) / 2);
-            Y_MIN = lerp(-zoomAmount, Y_MIN, (Y_MAX + Y_MIN) / 2);
-            R_MAX = lerp(-zoomAmount, R_MAX, (R_MAX + R_MIN) / 2);
-            R_MIN = lerp(-zoomAmount, R_MIN, (R_MAX + R_MIN) / 2);
+            Y_MAX = lerp(-ZOOM_SPEED, Y_MAX, (Y_MAX + Y_MIN) / 2);
+            Y_MIN = lerp(-ZOOM_SPEED, Y_MIN, (Y_MAX + Y_MIN) / 2);
+            R_MAX = lerp(-ZOOM_SPEED, R_MAX, (R_MAX + R_MIN) / 2);
+            R_MIN = lerp(-ZOOM_SPEED, R_MIN, (R_MAX + R_MIN) / 2);
             DIRTY_UPDATE = true;
         }
         //handle events
