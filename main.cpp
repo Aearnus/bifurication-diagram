@@ -120,9 +120,8 @@ void drawCoords(TTF_Font *font, SDL_Renderer *ren, long double r, long double x,
     SDL_SetRenderDrawColor(ren, 128, 128, 128, 255);
     std::stringstream coordsText;
     coordsText
-    << "x = " << STARTING_VALUE << "\n"
     << "r = " << CURRENT_R << "\n"
-    << "y = " << CURRENT_Y << "\n";
+    << "xn = " << CURRENT_Y << "\n";
     SDL_Surface *coordsSurface = TTF_RenderText_Blended_Wrapped(font, coordsText.str().c_str(), {255, 255, 255, 255}, X_RES);
     SDL_Texture *coords = SDL_CreateTextureFromSurface(ren, coordsSurface);
     SDL_Rect coordsRect;
