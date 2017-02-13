@@ -167,15 +167,15 @@ int main() {
     //enter main loop
     while (go) {
         //begin draw loop
-        //only update if it's not dirty rendering
-        //avoid a nasty race condition
-        if (!DIRTY_UPDATE) {
-            SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
-            SDL_RenderClear(ren);
-            drawCoords(font, ren, 0, 0, 0);
-            SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
-            for (long long cycleI = 0; cycleI < cycleList.size(); cycleI++) {
-                CycleData cycle;
+        SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+        SDL_RenderClear(ren);
+        drawCoords(font, ren, 0, 0, 0);
+        SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
+        for (long long cycleI = 0; cycleI < cycleList.size(); cycleI++) {
+            CycleData cycle;
+            //only update if it's not dirty rendering
+            //avoid a nasty race condition
+            if (!DIRTY_UPDATE) {
                 cycle = cycleList.at(cycleI);
                 if (cycle.converging) {
                     for (auto cs : cycle.cycle) {
@@ -186,8 +186,8 @@ int main() {
                     }
                 }
             }
-            SDL_RenderPresent(ren);
         }
+        SDL_RenderPresent(ren);
         //handle controls
         SDL_PumpEvents(); //update keyboard array
         //movement
