@@ -10,21 +10,21 @@ const long double MAX_ERROR = 0.00001;
 const int MAX_ITERATIONS = 1000;
 const int X_RES = 1366;
 const int Y_RES = 768;
-const long double R_MAX = 4;
-const long double R_MIN = 3;
-const long double Y_MAX = 1;
-const long double Y_MIN = 0;
-//const long double R_MAX = 4;
-//const long double R_MIN = 0;
-//const long double Y_MAX = 1;
-//const long double Y_MIN = 0;
+long double R_MAX = 1.5;
+long double R_MIN = 0;
+long double Y_MAX = 3;
+long double Y_MIN = -3;
+bool DIRTY_UPDATE = false;
+//long double R_MAX = 4;
+//long double R_MIN = 0;
+//long double Y_MAX = 1;
+//long double Y_MIN = 0;
 long double CURRENT_R = 0;
 long double CURRENT_Y = 0;
 const long double STARTING_VALUE = 0.5;
 
 long double f(long double x, long double r) {
     return (r*x*(1 - x));
-    //return (r*x*(1 - x));
     //return std::pow(r, x);
 }
 
@@ -109,10 +109,21 @@ void printCycle(CycleData c) {
 }
 
 void calcPoints(SDL_Renderer *ren, std::vector<CycleData> *cycleList) {
-    for (long double r = R_MIN; r < R_MAX; r += ((R_MAX-R_MIN)/X_RES)) {
-        CycleData cycle = fixedCycle(STARTING_VALUE, r);
-        printCycle(cycle);
-        cycleList->push_back(cycle);
+    for (;;) {
+        long double deltaRMin = R_MIN;
+        long double deltaRMax = R_MAX;
+        long double deltaYMin = Y_MIN;
+        long double deltaYMax = Y_MAX;
+        for (long double r = R_MIN; r < R_MAX; r += ((R_MAX-R_MIN)/X_RES)) {
+            if (DIRTY_UPDATE) {
+                DIRTY_UPDATE = false;
+                break;
+            }
+            CycleData cycle = fixedCycle(STARTING_VALUE, r);
+            printCycle(cycle);
+            cycleList->push_back(cycle);
+        }
+        SDL_Delay(10);
     }
 }
 
@@ -134,11 +145,16 @@ void drawCoords(TTF_Font *font, SDL_Renderer *ren, long double r, long double x,
     SDL_DestroyTexture(coords);
 }
 
+long double lerp(long double t, long double a, long double b){
+      return (1-t)*a + t*b;
+}
+
 int main() {
     bool go = true;
     SDL_Init(SDL_INIT_VIDEO);
     TTF_Init();
     TTF_Font *font = TTF_OpenFont("DejaVuSansMono.ttf", 24);
+    const Uint8 *keyboard = SDL_GetKeyboardState(NULL);
     std::stringstream windowTitle;
     windowTitle << "Bifurication of f("<< STARTING_VALUE << "), " << R_MIN << " < r < " << R_MAX << " " << Y_MIN << " < y < " << Y_MAX;
     SDL_Window *win = SDL_CreateWindow(windowTitle.str().c_str(), 0,0, 1366,768, SDL_WINDOW_SHOWN);
@@ -164,6 +180,48 @@ int main() {
             }
         }
         SDL_RenderPresent(ren);
+        //handle controls
+        SDL_PumpEvents(); //update keyboard array
+        //movement
+        long double moveAmountR = (R_MAX - R_MIN) / 800;
+        long double moveAmountY = (Y_MAX - Y_MIN) / 800;
+        if (keyboard[SDL_SCANCODE_RIGHT]) {
+            R_MAX += moveAmountR;
+            R_MIN += moveAmountR;
+            DIRTY_UPDATE = true;
+        }
+        if (keyboard[SDL_SCANCODE_LEFT]) {
+            R_MAX -= moveAmountR;
+            R_MIN -= moveAmountR;
+            DIRTY_UPDATE = true;
+        }
+        if (keyboard[SDL_SCANCODE_UP]) {
+            Y_MAX += moveAmountY;
+            Y_MIN += moveAmountY;
+            DIRTY_UPDATE = true;
+        }
+        if (keyboard[SDL_SCANCODE_DOWN]) {
+            Y_MAX -= moveAmountY;
+            Y_MIN -= moveAmountY;
+            DIRTY_UPDATE = true;
+        }
+        //zooming
+        long double zoomAmount = 0.001;
+        if (keyboard[SDL_SCANCODE_E]) {
+            Y_MAX = lerp(zoomAmount, Y_MAX, (Y_MAX + Y_MIN) / 2);
+            Y_MIN = lerp(zoomAmount, Y_MIN, (Y_MAX + Y_MIN) / 2);
+            R_MAX = lerp(zoomAmount, R_MAX, (R_MAX + R_MIN) / 2);
+            R_MIN = lerp(zoomAmount, R_MIN, (R_MAX + R_MIN) / 2);
+            DIRTY_UPDATE = true;
+        }
+        if (keyboard[SDL_SCANCODE_Q]) {
+            Y_MAX = lerp(-zoomAmount, Y_MAX, (Y_MAX + Y_MIN) / 2);
+            Y_MIN = lerp(-zoomAmount, Y_MIN, (Y_MAX + Y_MIN) / 2);
+            R_MAX = lerp(-zoomAmount, R_MAX, (R_MAX + R_MIN) / 2);
+            R_MIN = lerp(-zoomAmount, R_MIN, (R_MAX + R_MIN) / 2);
+            DIRTY_UPDATE = true;
+        }
+        //handle events
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
