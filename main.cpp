@@ -10,10 +10,10 @@ const long double MAX_ERROR = 0.00001;
 const int MAX_ITERATIONS = 1000;
 const int X_RES = 1366;
 const int Y_RES = 768;
-long double R_MAX = 1.5;
+long double R_MAX = 4;
 long double R_MIN = 0;
-long double Y_MAX = 3;
-long double Y_MIN = -3;
+long double Y_MAX = 1;
+long double Y_MIN = 0;
 bool DIRTY_UPDATE = false;
 //long double R_MAX = 4;
 //long double R_MIN = 0;
@@ -109,21 +109,21 @@ void printCycle(CycleData c) {
 }
 
 void calcPoints(SDL_Renderer *ren, std::vector<CycleData> *cycleList) {
+    //DIRTY_UPDATE is managed by the other thread
     for (;;) {
-        long double deltaRMin = R_MIN;
-        long double deltaRMax = R_MAX;
-        long double deltaYMin = Y_MIN;
-        long double deltaYMax = Y_MAX;
         for (long double r = R_MIN; r < R_MAX; r += ((R_MAX-R_MIN)/X_RES)) {
             if (DIRTY_UPDATE) {
-                DIRTY_UPDATE = false;
                 break;
             }
             CycleData cycle = fixedCycle(STARTING_VALUE, r);
-            printCycle(cycle);
+            //printCycle(cycle);
             cycleList->push_back(cycle);
         }
-        SDL_Delay(10);
+        while (!DIRTY_UPDATE) {
+            SDL_Delay(10);
+        }
+        DIRTY_UPDATE = false;
+        *cycleList = std::vector<CycleData>();
     }
 }
 
@@ -165,21 +165,27 @@ int main() {
     //enter main loop
     while (go) {
         //begin draw loop
-        SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
-        SDL_RenderClear(ren);
-        drawCoords(font, ren, 0, 0, 0);
-        SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
-        for (auto cycle : cycleList) {
-            if (cycle.converging) {
-                for (auto cs : cycle.cycle) {
-                    SDL_RenderDrawPoint(ren,
-                        (cycle.rValue - R_MIN) * (X_RES / (R_MAX-R_MIN)),
-                        Y_RES - ((cs - Y_MIN) * (Y_RES / (Y_MAX-Y_MIN)))
-                    );
+        //only update if it's not dirty rendering
+        //avoid a nasty race condition
+        if (!DIRTY_UPDATE) {
+            SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+            SDL_RenderClear(ren);
+            drawCoords(font, ren, 0, 0, 0);
+            SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
+            for (long long cycleI = 0; cycleI < cycleList.size(); cycleI++) {
+                CycleData cycle;
+                cycle = cycleList.at(cycleI);
+                if (cycle.converging) {
+                    for (auto cs : cycle.cycle) {
+                        SDL_RenderDrawPoint(ren,
+                            (cycle.rValue - R_MIN) * (X_RES / (R_MAX-R_MIN)),
+                            Y_RES - ((cs - Y_MIN) * (Y_RES / (Y_MAX-Y_MIN)))
+                        );
+                    }
                 }
             }
+            SDL_RenderPresent(ren);
         }
-        SDL_RenderPresent(ren);
         //handle controls
         SDL_PumpEvents(); //update keyboard array
         //movement
@@ -234,6 +240,7 @@ int main() {
                 }
             }
         }
+        SDL_Delay(5);
     }
     SDL_DestroyWindow(win);
     SDL_DestroyRenderer(ren);
