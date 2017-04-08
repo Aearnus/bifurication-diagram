@@ -174,7 +174,7 @@ int main() {
             CycleData cycle;
             //only update if it's not dirty rendering
             //avoid a nasty race condition
-            if (!DIRTY_UPDATE) {
+            //if (!DIRTY_UPDATE) {
                 cycle = cycleList.at(cycleI);
                 if (cycle.converging) {
                     for (auto cs : cycle.cycle) {
@@ -184,7 +184,7 @@ int main() {
                         );
                     }
                 }
-            }
+            //}
         }
         SDL_RenderPresent(ren);
         //handle controls
