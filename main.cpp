@@ -124,7 +124,6 @@ void calcPoints(SDL_Renderer *ren, std::vector<CycleData> *cycleList) {
         while (!DIRTY_UPDATE) {
             SDL_Delay(10);
         }
-        DIRTY_UPDATE = false;
         *cycleList = std::vector<CycleData>();
     }
 }
@@ -191,6 +190,7 @@ int main() {
         //handle controls
         SDL_PumpEvents(); //update keyboard array
         //movement
+        DIRTY_UPDATE = false;
         long double moveAmountR = (R_MAX - R_MIN) / INVERSE_MOVE_SPEED;
         long double moveAmountY = (Y_MAX - Y_MIN) / INVERSE_MOVE_SPEED;
         if (keyboard[SDL_SCANCODE_RIGHT]) {
